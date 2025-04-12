@@ -10,10 +10,6 @@ inherit cargo cargo-update-recipe-crates
 SRC_URI += "git://github.com/uutils/coreutils.git;protocol=https;branch=main \
     file://0001-do-not-compile-stdbuf.patch"
 
-# musl not supported because the libc crate does not support functions like "endutxent" at the moment,
-# so src/uucore/src/lib/features.rs disables utmpx when targetting musl.
-COMPATIBLE_HOST:libc-musl = "null"
-
 SRCREV = "088599f41602e0b0505543a010ec59f5f81e74b1"
 S = "${WORKDIR}/git"
 
@@ -27,6 +23,8 @@ PACKAGECONFIG ?= "${@bb.utils.filter('DISTRO_FEATURES', 'selinux', d)}"
 PACKAGECONFIG[selinux] = ",,libselinux"
 
 CARGO_BUILD_FLAGS += "--features unix"
+CARGO_BUILD_FLAGS:append:libc-musl = " feat_os_unix_musl"
+CARGO_BUILD_FLAGS:remove:libc-musl = "unix"
 CARGO_BUILD_FLAGS += "${@bb.utils.contains('PACKAGECONFIG', 'selinux', '--features feat_selinux', '', d)}"
 
 DEPENDS += "${@bb.utils.contains('PACKAGECONFIG', 'selinux', 'clang-native libselinux-native', '', d)}"
