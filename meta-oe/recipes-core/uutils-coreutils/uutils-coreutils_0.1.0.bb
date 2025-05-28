@@ -7,12 +7,9 @@ LIC_FILES_CHKSUM = "file://LICENSE;md5=e74349878141b240070458d414ab3b64"
 
 inherit cargo cargo-update-recipe-crates
 
-SRC_URI += "git://github.com/uutils/coreutils.git;protocol=https;branch=main \
-    file://0001-do-not-compile-stdbuf.patch \
-    file://0002-Bump-onig-from-6.4.0-to-6.5.1.patch \
-"
+SRC_URI = "git://github.com/uutils/coreutils.git;protocol=https;branch=main"
 
-SRCREV = "18b963ed6f612ac30ebca92426280cf4c1451f6a"
+SRCREV = "2451682637aa62ae61187ce491dd9a6ab969d980"
 S = "${WORKDIR}/git"
 
 require ${BPN}-crates.inc
@@ -23,7 +20,7 @@ RPROVIDES:${PN} = "coreutils"
 PACKAGECONFIG ?= "${@bb.utils.filter('DISTRO_FEATURES', 'selinux', d)}"
 PACKAGECONFIG[selinux] = "--features feat_selinux,,clang-native libselinux-native libselinux"
 
-CARGO_BUILD_FLAGS += "--features unix"
+CARGO_BUILD_FLAGS += "--features unix --features feat_external_libstdbuf"
 
 # The code which follows is strongly inspired from the GNU coreutils bitbake recipe:
 
@@ -32,7 +29,7 @@ bindir_progs = "[ arch basename cksum comm csplit cut dir dircolors dirname du \
                 env expand expr factor fmt fold groups head hostid id install \
                 join link logname md5sum mkfifo nl nohup nproc od paste pathchk \
                 pinky pr printf ptx readlink realpath seq sha1sum sha224sum sha256sum \
-                sha384sum sha512sum shred shuf sort split sum tac tail tee test timeout \
+                sha384sum sha512sum shred shuf sort split stdbuf sum tac tail tee test timeout \
                 tr truncate tsort tty unexpand uniq unlink uptime users vdir wc who whoami yes"
 
 bindir_progs += "${@bb.utils.contains('PACKAGECONFIG', 'selinux', 'chcon runcon', '', d)}"
@@ -64,6 +61,13 @@ python __anonymous() {
 }
 
 do_compile:prepend() {
-    # In principle this is supposed to be exported by the project's .cargo/config.toml file, but for some reason it's not working
+    # In principle this is supposed to be exported by the project's .cargo/config.toml file, but yocto builds out-of-tree
+    # using cargo --manifest-path, and this ignores .cargo/config.toml . See https://github.com/rust-lang/cargo/issues/10098
     export PROJECT_NAME_FOR_VERSION_STRING="uutils coreutils"
+    export LIBSTDBUF_DIR="${rustlibdir}"
+}
+
+do_install:append() {
+    mkdir -p ${D}${rustlibdir}
+    cp ${B}/target/${CARGO_TARGET_SUBDIR}/deps/libstdbuf.so ${D}${rustlibdir}/libstdbuf.so
 }
