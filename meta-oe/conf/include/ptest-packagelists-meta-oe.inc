@@ -86,6 +86,7 @@ PTESTS_SLOW_META_OE = "\
     re2 \
     rocksdb \
     tbb \
+    uutils-coreutils \
 "
 PTESTS_SLOW_META_OE:append:x86 = " kernel-selftest"
 PTESTS_SLOW_META_OE:append:x86-64 = " kernel-selftest"
